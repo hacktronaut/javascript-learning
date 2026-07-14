@@ -62,4 +62,143 @@ import { user1 } from "./module1.js";
 ```
 
 1. **All imported files run first:** `sayHi.js`, `admin.js`, and `module1.js` will all be executed fully before `moduleDemo.js` executes its first line of code (the `console.log`).
-2. Even though `import { user1 } from "./module1.js"` is at the bottom, `module1.js` is fully executed before the first `console.log(adminUser)` runs. If `module1.js` mutated `adminUser`, that mutation will be reflected in the first `console.log`.
+2. Even though `import { user1 } from "./module1.js"` is at the bottom, `module1.js` is fully executed before the first `console.log(adminUser)` runs. If `module1.js` mutated `adminUser`, that mutation will be reflected in the first `console.log`.
+
+
+### `import.meta`
+
+The `import.meta` object contains metadata about the current module.
+
+Its content depends on the execution environment. 
+
+**In the browser:**
+It contains the URL of the script, or the current webpage URL if it's inside an inline HTML script:
+
+```javascript
+<script type="module">
+  alert(import.meta.url); // Script URL
+  // For an inline script, this is the URL of the current HTML page
+</script>
+```
+
+**In Node.js:**
+You can use it similarly on the backend:
+
+```javascript
+console.log("This is a meta module");
+
+export let data = {
+    firstName: "Kirito"
+};
+
+export let printMetaInformation = () => {
+    console.log(import.meta);
+};
+```
+
+---
+
+### In a Module, `this` is Always `undefined`
+
+In a module, the top-level `this` keyword is `undefined`.
+
+Compare this to non-module scripts, where `this` refers to the global object (e.g., `window` in browsers):
+
+```html
+<script>
+  alert(this); // window
+</script>
+
+<script type="module">
+  alert(this); // undefined
+</script>
+```
+
+This happens because modules are always executed in **strict mode** (`"use strict"`). In strict mode, JavaScript does not allow variables or the `this` context to silently fall back to the global object. This behavior helps maintain encapsulation and prevents accidental global state pollution.
+
+---
+
+### Browser-Specific Features
+
+There are several browser-specific differences when using `<script type="module">` compared to regular scripts. 
+
+*(You may want to skip this section if you're not using JavaScript in a browser context just yet.)*
+
+#### 1. Module Scripts are Deferred
+
+Module scripts are always deferred by default. This has the same effect as the `defer` attribute for both external and inline scripts.
+
+In other words:
+- Downloading external module scripts (`<script type="module" src="...">`) doesn't block HTML processing; they load in parallel with other resources.
+- Module scripts wait until the HTML document is fully ready (even if they load faster than the HTML) and then run.
+- The relative order of scripts is maintained: scripts that appear first in the document execute first.
+
+As a side effect, module scripts always "see" the fully loaded HTML page, including the elements located below them.
+
+```html
+<script type="module">
+  alert(typeof button); // "object" - The script can 'see' the button below
+  // As modules are deferred, the script runs after the whole page is loaded
+</script>
+
+<!-- Compare to a regular script below: -->
+<script>
+  alert(typeof button); // "undefined" - The script can't see elements below it yet
+  // Regular scripts run immediately, before the rest of the page is processed
+</script>
+
+<button id="button">Button</button>
+```
+
+> **Note:** The second (regular) script actually runs before the first (module) script! You will see `undefined` first, and then `object`.
+
+Because modules run after the HTML page loads, users might see the UI before the JavaScript application is ready. Ensure you implement loading indicators to avoid confusing visitors if certain functionality isn't immediately available.
+
+#### 2. External Scripts Run Only Once
+
+External scripts with `type="module"` and the same `src` are fetched and executed only once:
+
+```html
+<!-- The script 'my.js' is fetched and executed only once -->
+<script type="module" src="my.js"></script>
+<script type="module" src="my.js"></script>
+```
+
+#### 3. Cross-Origin Fetch Requires CORS Headers
+
+External scripts fetched from another origin (e.g., another domain) require CORS (Cross-Origin Resource Sharing) headers. The remote server must supply an `Access-Control-Allow-Origin` header allowing the fetch; otherwise, the script won't execute.
+
+```html
+<!-- another-site.com must supply Access-Control-Allow-Origin -->
+<!-- otherwise, the script won't execute -->
+<script type="module" src="http://another-site.com/their.js"></script>
+```
+This ensures better security by default.
+
+#### 4. No "Bare" Modules Allowed
+
+In the browser, `import` must specify either a relative or an absolute URL. Modules without a path are called "bare" modules, and they are not allowed.
+
+For instance, this import is invalid in a browser:
+
+```javascript
+import { sayHi } from 'sayHi'; // Error: "bare" module
+// The module must have a path, e.g., './sayHi.js'
+```
+
+*Note: Environments like Node.js or bundlers (Webpack, Vite) allow bare modules because they have custom resolution logic, but native browsers do not.*
+
+#### 5. Compatibility & the `nomodule` Attribute
+
+Older browsers that do not understand `type="module"` will simply ignore those scripts. You can provide a fallback for these legacy browsers using the `nomodule` attribute:
+
+```html
+<script type="module">
+  alert("Runs in modern browsers");
+</script>
+
+<script nomodule>
+  alert("Modern browsers know both type=module and nomodule, so they skip this.");
+  alert("Old browsers ignore the script with an unknown type=module, but execute this one.");
+</script>
+```
