@@ -202,3 +202,74 @@ Older browsers that do not understand `type="module"` will simply ignore those s
   alert("Old browsers ignore the script with an unknown type=module, but execute this one.");
 </script>
 ```
+
+
+
+### Export and Import
+
+Export and import directives have several syntax variants.
+
+In the previous article we saw a simple use, now let’s explore more examples.
+
+Export before declarations
+We can label any declaration as exported by placing export before it, be it a variable, function or a class.
+
+#### Export apart from declarations
+
+Also, we can put export separately.
+
+Here we first declare, and then export:
+
+
+```javascript
+function sayHi(user) {
+  alert(`Hello, ${user}!`);
+}
+
+function sayBye(user) {
+  alert(`Bye, ${user}!`);
+}
+
+export {sayHi, sayBye}; // a list of exported variables
+```
+
+
+Or, technically we could put export above functions as well.
+
+Import *
+Usually, we put a list of what to import in curly braces import {...}, like this:
+
+// 📁 main.js
+import {sayHi, sayBye} from './say.js';
+
+sayHi('John'); // Hello, John!
+sayBye('John'); // Bye, John!
+But if there’s a lot to import, we can import everything as an object using import * as <obj>, for instance:
+
+// 📁 main.js
+import * as say from './say.js';
+
+say.sayHi('John');
+say.sayBye('John');
+
+
+>> At first sight, “import everything” seems such a cool thing, short to write, why should we ever explicitly list what we need to import?
+
+Well, there are few reasons.
+
+Explicitly listing what to import gives shorter names: sayHi() instead of say.sayHi().
+Explicit list of imports gives better overview of the code structure: what is used and where. It makes code support and refactoring easier.
+
+NOTE: Modern build tools, such as webpack and others, bundle modules together and optimize them to speedup loading. They also remove unused imports.
+
+For instance, if you import * as library from a huge code library, and then use only few methods, then unused ones will not be included into the optimized bundle.
+
+We can also use as to import under different names.
+
+For instance, let’s import sayHi into the local variable hi for brevity, and import sayBye as bye:
+
+// 📁 main.js
+import {sayHi as hi, sayBye as bye} from './say.js';
+
+hi('John'); // Hello, John!
+bye('John'); // Bye, John!
